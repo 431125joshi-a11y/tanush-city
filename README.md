@@ -1,2 +1,2 @@
 https://431125joshi-a11y.github.io/tanush-city/
-if you just simly wanna see just open this lik
+if you just simply wanna see just open this lik
