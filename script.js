@@ -1,748 +1,550 @@
-/* =========================================================
-   TANUSH CITY RADIO
-========================================================= */
+/* ==========================================================================
+   TANUSH CITY MUSIC PLAYER
+   ========================================================================== */
 
 
-/* =========================================================
+/* ==========================================================================
    PLAYLIST
-   EDIT THIS PART TO ADD / REMOVE SONGS
-========================================================= */
+   ==========================================================================
 
-const playlist = [
+   ONLY EDIT THIS SECTION TO CHANGE THE MUSIC.
+
+   Your files should be inside the "music" folder.
+
+   Example:
+
+   music/
+       minecraft.mp3
+       sweden.mp3
+       wet-hands.mp3
+
+   ========================================================================== */
+
+const songs = [
 
     {
         title: "Minecraft",
         artist: "C418",
-        file: "assets/music/minecraft.mp3"
+        file: "music/minecraft.mp3"
     },
 
     {
         title: "Sweden",
         artist: "C418",
-        file: "assets/music/sweden.mp3"
+        file: "music/sweden.mp3"
     },
 
     {
         title: "Wet Hands",
         artist: "C418",
-        file: "assets/music/wet-hands.mp3"
+        file: "music/wet-hands.mp3"
     },
 
     {
         title: "Subwoofer Lullaby",
         artist: "C418",
-        file: "assets/music/subwoofer-lullaby.mp3"
+        file: "music/subwoofer-lullaby.mp3"
     },
 
     {
         title: "Aria Math",
         artist: "C418",
-        file: "assets/music/aria-math.mp3"
+        file: "music/aria-math.mp3"
     },
 
     {
         title: "Mice on Venus",
         artist: "C418",
-        file: "assets/music/mice-on-venus.mp3"
-    },
-
-    {
-        title: "Moog City 2",
-        artist: "C418",
-        file: "assets/music/moog-city-2.mp3"
+        file: "music/mice-on-venus.mp3"
     },
 
     {
         title: "Moog City",
         artist: "C418",
-        file: "assets/music/moog-city.mp3"
+        file: "music/moog-city.mp3"
+    },
+
+    {
+        title: "Moog City 2",
+        artist: "C418",
+        file: "music/moog-city-2.mp3"
     },
 
     {
         title: "Haggstrom",
         artist: "C418",
-        file: "assets/music/haggstrom.mp3"
+        file: "music/haggstrom.mp3"
     }
-
 
 ];
 
 
-/* =========================================================
-   STATE
-========================================================= */
+/* ==========================================================================
+   ELEMENTS
+   ========================================================================== */
 
-let currentTrack = 0;
+const audio = document.getElementById("audio-player");
+
+const playButton = document.getElementById("play-button");
+const previousButton = document.getElementById("previous-button");
+const nextButton = document.getElementById("next-button");
+
+const shuffleButton = document.getElementById("shuffle-button");
+const repeatButton = document.getElementById("repeat-button");
+
+const progress = document.getElementById("progress");
+const volume = document.getElementById("volume");
+
+const currentSongElement = document.getElementById("current-song");
+const currentArtistElement = document.getElementById("current-artist");
+
+const currentTimeElement = document.getElementById("current-time");
+const durationElement = document.getElementById("duration");
+
+const playlistElement = document.getElementById("playlist");
+const playlistCountElement = document.getElementById("playlist-count");
+
+
+/* ==========================================================================
+   PLAYER STATE
+   ========================================================================== */
+
+let currentSongIndex = 0;
+
 let isPlaying = false;
+
 let isShuffle = false;
-let isLooping = false;
 
-let shuffledPlaylist = [];
-let shufflePosition = 0;
+let isRepeat = false;
 
 
-/* =========================================================
-   DOM
-========================================================= */
-
-const audioPlayer =
-    document.getElementById("audioPlayer");
-
-const playBtn =
-    document.getElementById("playBtn");
-
-const previousBtn =
-    document.getElementById("previousBtn");
-
-const nextBtn =
-    document.getElementById("nextBtn");
-
-const shuffleBtn =
-    document.getElementById("shuffleBtn");
-
-const loopBtn =
-    document.getElementById("loopBtn");
-
-const progressBar =
-    document.getElementById("progressBar");
-
-const volumeBar =
-    document.getElementById("volumeBar");
-
-const currentTimeElement =
-    document.getElementById("currentTime");
-
-const durationElement =
-    document.getElementById("duration");
-
-const trackTitle =
-    document.getElementById("trackTitle");
-
-const trackArtist =
-    document.getElementById("trackArtist");
-
-const playlistElement =
-    document.getElementById("playlist");
-
-const playlistCount =
-    document.getElementById("playlistCount");
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
+/* ==========================================================================
+   INITIAL SETUP
+   ========================================================================== */
 
 function initializePlayer() {
 
-    if (playlist.length === 0) {
+    if (songs.length === 0) {
 
-        trackTitle.textContent = "No songs";
+        currentSongElement.textContent = "No songs";
 
-        trackArtist.textContent =
-            "Add songs to the playlist";
+        currentArtistElement.textContent = "Playlist is empty";
+
+        playButton.disabled = true;
 
         return;
 
     }
 
-    playlistCount.textContent =
-        `${playlist.length} tracks`;
+    playlistCountElement.textContent =
+        `${songs.length} TRACK${songs.length === 1 ? "" : "S"}`;
 
-    createPlaylist();
+    buildPlaylist();
 
-    loadTrack(0);
+    loadSong(currentSongIndex);
 
-    audioPlayer.volume = 0.7;
-
-}
-
-
-/* =========================================================
-   CREATE PLAYLIST
-========================================================= */
-
-function createPlaylist() {
-
-    playlistElement.innerHTML = "";
-
-    playlist.forEach((track, index) => {
-
-        const trackElement =
-            document.createElement("button");
-
-        trackElement.type = "button";
-
-        trackElement.className =
-            "playlist-track";
-
-        trackElement.dataset.index =
-            index;
-
-
-        trackElement.innerHTML = `
-
-            <span class="track-number">
-                ${String(index + 1).padStart(2, "0")}
-            </span>
-
-            <span class="track-details">
-
-                <strong>
-                    ${escapeHTML(track.title)}
-                </strong>
-
-                <small>
-                    ${escapeHTML(track.artist)}
-                </small>
-
-            </span>
-
-            <span class="track-play">
-                ▶
-            </span>
-
-        `;
-
-
-        /*
-           THIS is what lets the user
-           choose the song.
-        */
-
-        trackElement.addEventListener(
-            "click",
-            () => {
-
-                selectTrack(index);
-
-            }
-        );
-
-
-        playlistElement.appendChild(
-            trackElement
-        );
-
-    });
-
-
-    updatePlaylistUI();
+    audio.volume = Number(volume.value);
 
 }
 
 
-/* =========================================================
-   SELECT A SONG
-   ========================================================= */
+/* ==========================================================================
+   LOAD SONG
+   ========================================================================== */
 
-function selectTrack(index) {
+function loadSong(index) {
 
-    if (!playlist[index]) {
+    if (!songs[index]) {
         return;
     }
 
-    currentTrack = index;
+    currentSongIndex = index;
 
-    /*
-       Load the selected song.
-    */
+    const song = songs[currentSongIndex];
 
-    loadTrack(index);
+    audio.src = song.file;
 
-    /*
-       Immediately start playing it.
-    */
+    currentSongElement.textContent = song.title;
 
-    playTrack();
+    currentArtistElement.textContent = song.artist;
 
-}
+    progress.value = 0;
 
+    currentTimeElement.textContent = "0:00";
 
-/* =========================================================
-   LOAD TRACK
-========================================================= */
+    durationElement.textContent = "0:00";
 
-function loadTrack(index) {
-
-    const track =
-        playlist[index];
-
-    if (!track) {
-        return;
-    }
-
-    currentTrack = index;
-
-    audioPlayer.src =
-        track.file;
-
-    audioPlayer.load();
-
-    trackTitle.textContent =
-        track.title;
-
-    trackArtist.textContent =
-        track.artist;
-
-    progressBar.value = 0;
-
-    currentTimeElement.textContent =
-        "0:00";
-
-    durationElement.textContent =
-        "0:00";
-
-    updatePlaylistUI();
+    updatePlaylist();
 
 }
 
 
-/* =========================================================
+/* ==========================================================================
    PLAY
-========================================================= */
+   ========================================================================== */
 
-function playTrack() {
+function playSong() {
 
-    if (!playlist.length) {
+    if (!songs.length) {
         return;
     }
 
-    audioPlayer
-        .play()
+    audio.play()
         .then(() => {
 
             isPlaying = true;
 
             updatePlayButton();
 
-            updatePlaylistUI();
-
         })
         .catch(error => {
 
-            console.warn(
-                "Browser blocked audio:",
-                error
-            );
+            console.error("Unable to play audio:", error);
 
         });
 
 }
 
 
-/* =========================================================
+/* ==========================================================================
    PAUSE
-========================================================= */
+   ========================================================================== */
 
-function pauseTrack() {
+function pauseSong() {
 
-    audioPlayer.pause();
+    audio.pause();
 
     isPlaying = false;
 
     updatePlayButton();
 
-    updatePlaylistUI();
+}
+
+
+/* ==========================================================================
+   PLAY / PAUSE
+   ========================================================================== */
+
+function togglePlay() {
+
+    if (isPlaying) {
+
+        pauseSong();
+
+    } else {
+
+        playSong();
+
+    }
 
 }
 
 
-/* =========================================================
-   PLAY / PAUSE
-========================================================= */
-
-playBtn.addEventListener(
-    "click",
-    () => {
-
-        if (isPlaying) {
-
-            pauseTrack();
-
-        } else {
-
-            playTrack();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   UPDATE PLAY BUTTON
-========================================================= */
+/* ==========================================================================
+   PLAY BUTTON UI
+   ========================================================================== */
 
 function updatePlayButton() {
 
-    playBtn.textContent =
-        isPlaying ? "❚❚" : "▶";
+    if (isPlaying) {
+
+        playButton.textContent = "❚❚";
+
+        playButton.setAttribute(
+            "aria-label",
+            "Pause"
+        );
+
+        playButton.setAttribute(
+            "title",
+            "Pause"
+        );
+
+    } else {
+
+        playButton.textContent = "▶";
+
+        playButton.setAttribute(
+            "aria-label",
+            "Play"
+        );
+
+        playButton.setAttribute(
+            "title",
+            "Play"
+        );
+
+    }
 
 }
 
 
-/* =========================================================
-   NEXT
-========================================================= */
+/* ==========================================================================
+   NEXT SONG
+   ========================================================================== */
 
-function nextTrack() {
+function nextSong() {
 
-    if (!playlist.length) {
+    if (!songs.length) {
         return;
     }
 
 
-    if (isShuffle) {
+    if (isShuffle && songs.length > 1) {
 
-        if (
-            shufflePosition >=
-            shuffledPlaylist.length - 1
-        ) {
+        let newIndex;
 
-            createShuffleOrder();
+        do {
 
-        } else {
+            newIndex =
+                Math.floor(
+                    Math.random() * songs.length
+                );
 
-            shufflePosition++;
+        } while (
+            newIndex === currentSongIndex
+        );
 
-        }
-
-        currentTrack =
-            shuffledPlaylist[shufflePosition];
+        currentSongIndex = newIndex;
 
     } else {
 
-        currentTrack++;
+        currentSongIndex++;
 
-        if (
-            currentTrack >=
-            playlist.length
-        ) {
+        if (currentSongIndex >= songs.length) {
 
-            currentTrack = 0;
+            currentSongIndex = 0;
 
         }
 
     }
 
 
-    loadTrack(currentTrack);
+    loadSong(currentSongIndex);
 
-    playTrack();
+    playSong();
 
 }
 
 
-/* =========================================================
-   PREVIOUS
-========================================================= */
+/* ==========================================================================
+   PREVIOUS SONG
+   ========================================================================== */
 
-function previousTrack() {
+function previousSong() {
 
-    if (!playlist.length) {
+    if (!songs.length) {
         return;
     }
 
 
     /*
-       If the song has already played for
-       more than 3 seconds, restart it.
+       If the song has already played for more than
+       three seconds, pressing previous restarts it.
     */
 
-    if (audioPlayer.currentTime > 3) {
+    if (audio.currentTime > 3) {
 
-        audioPlayer.currentTime = 0;
+        audio.currentTime = 0;
 
         return;
 
     }
 
 
-    if (isShuffle) {
+    currentSongIndex--;
 
-        if (shufflePosition > 0) {
+    if (currentSongIndex < 0) {
 
-            shufflePosition--;
-
-            currentTrack =
-                shuffledPlaylist[
-                    shufflePosition
-                ];
-
-        }
-
-    } else {
-
-        currentTrack--;
-
-        if (currentTrack < 0) {
-
-            currentTrack =
-                playlist.length - 1;
-
-        }
+        currentSongIndex =
+            songs.length - 1;
 
     }
 
 
-    loadTrack(currentTrack);
+    loadSong(currentSongIndex);
 
-    playTrack();
+    playSong();
 
 }
 
 
-/* =========================================================
-   BUTTONS
-========================================================= */
-
-nextBtn.addEventListener(
-    "click",
-    nextTrack
-);
-
-previousBtn.addEventListener(
-    "click",
-    previousTrack
-);
-
-
-/* =========================================================
+/* ==========================================================================
    SHUFFLE
-========================================================= */
+   ========================================================================== */
 
-shuffleBtn.addEventListener(
-    "click",
-    () => {
+function toggleShuffle() {
 
-        isShuffle =
-            !isShuffle;
+    isShuffle = !isShuffle;
 
-        shuffleBtn.classList.toggle(
-            "active",
-            isShuffle
-        );
-
-
-        if (isShuffle) {
-
-            createShuffleOrder();
-
-        } else {
-
-            shuffledPlaylist = [];
-
-            shufflePosition = 0;
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   CREATE SHUFFLE
-========================================================= */
-
-function createShuffleOrder() {
-
-    shuffledPlaylist =
-        playlist.map(
-            (_, index) => index
-        );
-
-
-    for (
-        let i = shuffledPlaylist.length - 1;
-        i > 0;
-        i--
-    ) {
-
-        const randomIndex =
-            Math.floor(
-                Math.random() * (i + 1)
-            );
-
-
-        [
-            shuffledPlaylist[i],
-            shuffledPlaylist[randomIndex]
-        ] = [
-            shuffledPlaylist[randomIndex],
-            shuffledPlaylist[i]
-        ];
-
-    }
-
-
-    /*
-       Don't immediately play
-       the same song.
-    */
-
-    if (
-        shuffledPlaylist.length > 1 &&
-        shuffledPlaylist[0] === currentTrack
-    ) {
-
-        [
-            shuffledPlaylist[0],
-            shuffledPlaylist[1]
-        ] = [
-            shuffledPlaylist[1],
-            shuffledPlaylist[0]
-        ];
-
-    }
-
-
-    shufflePosition = 0;
+    shuffleButton.classList.toggle(
+        "active",
+        isShuffle
+    );
 
 }
 
 
-/* =========================================================
-   LOOP
-========================================================= */
+/* ==========================================================================
+   REPEAT
+   ========================================================================== */
 
-loopBtn.addEventListener(
-    "click",
-    () => {
+function toggleRepeat() {
 
-        isLooping =
-            !isLooping;
+    isRepeat = !isRepeat;
 
-        loopBtn.classList.toggle(
-            "active",
-            isLooping
+    repeatButton.classList.toggle(
+        "active",
+        isRepeat
+    );
+
+}
+
+
+/* ==========================================================================
+   BUILD PLAYLIST
+   ========================================================================== */
+
+function buildPlaylist() {
+
+    playlistElement.innerHTML = "";
+
+    songs.forEach((song, index) => {
+
+        const track = document.createElement("button");
+
+        track.type = "button";
+
+        track.className = "playlist-track";
+
+        track.dataset.index = index;
+
+
+        /* Track number */
+
+        const number =
+            document.createElement("span");
+
+        number.className = "track-number";
+
+        number.textContent =
+            String(index + 1).padStart(2, "0");
+
+
+        /* Song information */
+
+        const details =
+            document.createElement("span");
+
+        details.className = "track-details";
+
+
+        const title =
+            document.createElement("strong");
+
+        title.textContent = song.title;
+
+
+        const artist =
+            document.createElement("small");
+
+        artist.textContent = song.artist;
+
+
+        details.appendChild(title);
+
+        details.appendChild(artist);
+
+
+        /* Play symbol */
+
+        const playIcon =
+            document.createElement("span");
+
+        playIcon.className = "track-play";
+
+        playIcon.textContent = "▶";
+
+
+        /* Put everything together */
+
+        track.appendChild(number);
+
+        track.appendChild(details);
+
+        track.appendChild(playIcon);
+
+
+        /* Click song */
+
+        track.addEventListener(
+            "click",
+            () => {
+
+                loadSong(index);
+
+                playSong();
+
+            }
         );
 
-    }
-);
+
+        playlistElement.appendChild(track);
+
+    });
 
 
-/* =========================================================
-   SONG FINISHED
-========================================================= */
+    updatePlaylist();
 
-audioPlayer.addEventListener(
-    "ended",
-    () => {
+}
 
-        if (isLooping) {
 
-            audioPlayer.currentTime = 0;
+/* ==========================================================================
+   UPDATE CURRENT PLAYLIST ITEM
+   ========================================================================== */
 
-            playTrack();
+function updatePlaylist() {
+
+    const tracks =
+        playlistElement.querySelectorAll(
+            ".playlist-track"
+        );
+
+
+    tracks.forEach((track, index) => {
+
+        track.classList.toggle(
+            "current",
+            index === currentSongIndex
+        );
+
+
+        const icon =
+            track.querySelector(".track-play");
+
+
+        if (index === currentSongIndex && isPlaying) {
+
+            icon.textContent = "❚❚";
 
         } else {
 
-            nextTrack();
+            icon.textContent = "▶";
 
         }
 
-    }
-);
+    });
+
+}
 
 
-/* =========================================================
-   PROGRESS
-========================================================= */
-
-audioPlayer.addEventListener(
-    "timeupdate",
-    () => {
-
-        if (!audioPlayer.duration) {
-            return;
-        }
-
-
-        const percentage =
-            (
-                audioPlayer.currentTime /
-                audioPlayer.duration
-            ) * 100;
-
-
-        progressBar.value =
-            percentage;
-
-
-        currentTimeElement.textContent =
-            formatTime(
-                audioPlayer.currentTime
-            );
-
-    }
-);
-
-
-/* =========================================================
-   DURATION
-========================================================= */
-
-audioPlayer.addEventListener(
-    "loadedmetadata",
-    () => {
-
-        durationElement.textContent =
-            formatTime(
-                audioPlayer.duration
-            );
-
-    }
-);
-
-
-/* =========================================================
-   SEEK
-========================================================= */
-
-progressBar.addEventListener(
-    "input",
-    () => {
-
-        if (!audioPlayer.duration) {
-            return;
-        }
-
-
-        audioPlayer.currentTime =
-            (
-                progressBar.value / 100
-            ) *
-            audioPlayer.duration;
-
-    }
-);
-
-
-/* =========================================================
-   VOLUME
-========================================================= */
-
-volumeBar.addEventListener(
-    "input",
-    () => {
-
-        audioPlayer.volume =
-            Number(volumeBar.value);
-
-    }
-);
-
-
-/* =========================================================
+/* ==========================================================================
    FORMAT TIME
-========================================================= */
+   ========================================================================== */
 
 function formatTime(seconds) {
 
-    if (
-        !Number.isFinite(seconds) ||
-        seconds < 0
-    ) {
+    if (!Number.isFinite(seconds)) {
 
         return "0:00";
 
@@ -751,6 +553,7 @@ function formatTime(seconds) {
 
     const minutes =
         Math.floor(seconds / 60);
+
 
     const remainingSeconds =
         Math.floor(seconds % 60);
@@ -763,57 +566,197 @@ function formatTime(seconds) {
 }
 
 
-/* =========================================================
-   UPDATE PLAYLIST
-========================================================= */
+/* ==========================================================================
+   UPDATE PROGRESS
+   ========================================================================== */
 
-function updatePlaylistUI() {
+function updateProgress() {
 
-    const tracks =
-        playlistElement.querySelectorAll(
-            ".playlist-track"
-        );
-
-
-    tracks.forEach(
-        (trackElement, index) => {
-
-            const isCurrent =
-                index === currentTrack;
+    if (!audio.duration) {
+        return;
+    }
 
 
-            trackElement.classList.toggle(
-                "current",
-                isCurrent
-            );
+    const percentage =
+        (audio.currentTime / audio.duration) * 100;
 
 
-            const indicator =
-                trackElement.querySelector(
-                    ".track-play"
-                );
+    progress.value = percentage;
 
 
-            if (indicator) {
+    currentTimeElement.textContent =
+        formatTime(audio.currentTime);
 
-                indicator.textContent =
-                    isCurrent && isPlaying
-                        ? "❚❚"
-                        : "▶";
 
-            }
-
-        }
-    );
+    durationElement.textContent =
+        formatTime(audio.duration);
 
 }
 
 
-/* =========================================================
-   AUDIO EVENTS
-========================================================= */
+/* ==========================================================================
+   SEEK
+   ========================================================================== */
 
-audioPlayer.addEventListener(
+function seekSong() {
+
+    if (!audio.duration) {
+        return;
+    }
+
+
+    const seekTime =
+        (Number(progress.value) / 100)
+        * audio.duration;
+
+
+    audio.currentTime = seekTime;
+
+}
+
+
+/* ==========================================================================
+   VOLUME
+   ========================================================================== */
+
+function updateVolume() {
+
+    audio.volume =
+        Number(volume.value);
+
+}
+
+
+/* ==========================================================================
+   SONG FINISHED
+   ========================================================================== */
+
+function songEnded() {
+
+    /*
+       Repeat the current song.
+    */
+
+    if (isRepeat) {
+
+        audio.currentTime = 0;
+
+        playSong();
+
+        return;
+
+    }
+
+
+    /*
+       Otherwise move to the next song.
+    */
+
+    nextSong();
+
+}
+
+
+/* ==========================================================================
+   AUDIO LOADED
+   ========================================================================== */
+
+function audioLoaded() {
+
+    durationElement.textContent =
+        formatTime(audio.duration);
+
+}
+
+
+/* ==========================================================================
+   EVENT LISTENERS
+   ========================================================================== */
+
+
+/* Play / Pause */
+
+playButton.addEventListener(
+    "click",
+    togglePlay
+);
+
+
+/* Previous */
+
+previousButton.addEventListener(
+    "click",
+    previousSong
+);
+
+
+/* Next */
+
+nextButton.addEventListener(
+    "click",
+    nextSong
+);
+
+
+/* Shuffle */
+
+shuffleButton.addEventListener(
+    "click",
+    toggleShuffle
+);
+
+
+/* Repeat */
+
+repeatButton.addEventListener(
+    "click",
+    toggleRepeat
+);
+
+
+/* Progress */
+
+progress.addEventListener(
+    "input",
+    seekSong
+);
+
+
+/* Volume */
+
+volume.addEventListener(
+    "input",
+    updateVolume
+);
+
+
+/* Audio progress */
+
+audio.addEventListener(
+    "timeupdate",
+    updateProgress
+);
+
+
+/* Audio metadata */
+
+audio.addEventListener(
+    "loadedmetadata",
+    audioLoaded
+);
+
+
+/* Song ended */
+
+audio.addEventListener(
+    "ended",
+    songEnded
+);
+
+
+/* When playback starts */
+
+audio.addEventListener(
     "play",
     () => {
 
@@ -821,13 +764,15 @@ audioPlayer.addEventListener(
 
         updatePlayButton();
 
-        updatePlaylistUI();
+        updatePlaylist();
 
     }
 );
 
 
-audioPlayer.addEventListener(
+/* When playback pauses */
+
+audio.addEventListener(
     "pause",
     () => {
 
@@ -835,62 +780,63 @@ audioPlayer.addEventListener(
 
         updatePlayButton();
 
-        updatePlaylistUI();
+        updatePlaylist();
 
     }
 );
 
 
-/* =========================================================
-   KEYBOARD SHORTCUTS
-========================================================= */
+/* ==========================================================================
+   KEYBOARD CONTROLS
+   ========================================================================== */
 
 document.addEventListener(
     "keydown",
     event => {
 
-        const tag =
-            event.target.tagName.toLowerCase();
+        /*
+           Space = Play/Pause
 
+           Don't trigger if the user is typing
+           into an input.
+        */
 
         if (
-            tag === "input" ||
-            tag === "textarea" ||
-            tag === "button"
+            event.code === "Space" &&
+            event.target.tagName !== "INPUT"
         ) {
-
-            return;
-
-        }
-
-
-        if (event.code === "Space") {
 
             event.preventDefault();
 
-            if (isPlaying) {
-
-                pauseTrack();
-
-            } else {
-
-                playTrack();
-
-            }
+            togglePlay();
 
         }
 
 
-        if (event.code === "ArrowRight") {
+        /*
+           Arrow Left = Previous
+        */
 
-            nextTrack();
+        if (
+            event.code === "ArrowLeft" &&
+            event.target.tagName !== "INPUT"
+        ) {
+
+            previousSong();
 
         }
 
 
-        if (event.code === "ArrowLeft") {
+        /*
+           Arrow Right = Next
+        */
 
-            previousTrack();
+        if (
+            event.code === "ArrowRight" &&
+            event.target.tagName !== "INPUT"
+        ) {
+
+            nextSong();
 
         }
 
@@ -898,25 +844,8 @@ document.addEventListener(
 );
 
 
-/* =========================================================
-   SECURITY / TEXT ESCAPING
-========================================================= */
-
-function escapeHTML(text) {
-
-    const element =
-        document.createElement("div");
-
-    element.textContent =
-        text;
-
-    return element.innerHTML;
-
-}
-
-
-/* =========================================================
-   START
-========================================================= */
+/* ==========================================================================
+   START PLAYER
+   ========================================================================== */
 
 initializePlayer();
